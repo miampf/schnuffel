@@ -13,8 +13,5 @@ unsafe_code = "forbid"
 pedantic = "deny"
 
 [dependencies]
-petgraph = {version = "0.6.5", features = ["rayon", "serde-1"]}
-url_serde = "0.2.0"
+schnuffel-types = {git = "https://github.com/miampf/schnuffel-types"}
 extism = "1.0.0"
-extism-convert = "1.4.1"
-serde = "1.0.204"

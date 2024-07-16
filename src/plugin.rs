@@ -2,10 +2,9 @@ use core::panic;
 use std::collections::HashMap;
 
 use extism::{typed_plugin, Manifest, Plugin, Wasm};
-use extism_convert::{FromBytes, Msgpack, ToBytes};
-use serde::{Deserialize, Serialize};
 
-use crate::graph::{Graph, Node};
+use schnuffel_types::graph::{Graph, Node};
+use schnuffel_types::plugin::{Input, Output};
 
 // The type information that a plugin must adhere to.
 // TODO: let plugins return results once own error is written.
@@ -14,20 +13,6 @@ typed_plugin!(SchnuffelPlugin {
     exec_on_node(Input<Node>) -> Output<Graph>;
     exec_on_graph(Input<Graph>) -> Output<Graph>;
 });
-
-#[derive(Clone, Debug, ToBytes, FromBytes, Serialize, Deserialize)]
-#[encoding(Msgpack)]
-/// Input of a plugin defined function.
-pub struct Input<T> {
-    config: HashMap<String, String>,
-    data: T,
-}
-#[derive(Clone, Debug, ToBytes, FromBytes, Serialize, Deserialize)]
-#[encoding(Msgpack)]
-/// Output of a plugin defined function.
-pub struct Output<T> {
-    data: T,
-}
 
 #[derive(Copy, Clone, Debug)]
 pub struct Wrapper<S: State> {
