@@ -13,3 +13,5 @@ unsafe_code = "forbid"
 pedantic = "deny"
 
 [dependencies]
+petgraph = {version = "0.6.5", features = ["rayon"]}
+url = "2.5.2"

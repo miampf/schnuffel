@@ -1,8 +1,10 @@
+#[derive(Copy, Clone, Debug)]
 struct PluginConfig<'a> {
     url: &'a str,
     extra_fields: &'a [&'a str],
 }
 
+#[derive(Copy, Clone, Debug)]
 struct Plugin<S: PluginState> {
     state: S,
 }
@@ -36,10 +38,13 @@ impl<'a> Plugin<RunningState<'a>> {
 }
 
 trait PluginState {}
+#[derive(Copy, Clone, Debug)]
 struct NewState {}
+#[derive(Copy, Clone, Debug)]
 struct InitializedState<'a> {
     config: PluginConfig<'a>,
 }
+#[derive(Copy, Clone, Debug)]
 struct RunningState<'a> {
     config: PluginConfig<'a>,
 }
