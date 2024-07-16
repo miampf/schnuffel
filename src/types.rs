@@ -1,56 +1,63 @@
+use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-#[derive(Copy, Clone, Debug)]
-pub struct PhoneNumber<'a> {
-    number: &'a str,
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PhoneNumber {
+    number: String,
 }
-impl<'a> PhoneNumber<'a> {
+impl PhoneNumber {
     #[must_use]
     pub fn from(number: &str) -> PhoneNumber {
         // TODO: phone number validation
-        PhoneNumber { number }
+        PhoneNumber {
+            number: number.to_string(),
+        }
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct EmailAddress<'a> {
-    email: &'a str,
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EmailAddress {
+    email: String,
 }
-impl<'a> EmailAddress<'a> {
+impl EmailAddress {
     #[must_use]
     pub fn from(email: &str) -> EmailAddress {
         // TODO: email validation
-        EmailAddress { email }
+        EmailAddress {
+            email: email.to_string(),
+        }
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Domain<'a> {
-    domain: &'a str,
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Domain {
+    domain: String,
 }
-impl<'a> Domain<'a> {
+impl Domain {
     #[must_use]
     pub fn from(domain: &str) -> Domain {
         // TODO: domain validation
-        Domain { domain }
+        Domain {
+            domain: domain.to_string(),
+        }
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum DNSRecord<'a> {
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DNSRecord {
     A(Ipv4Addr),
     AAAA(Ipv6Addr),
     CNAME {
-        from: &'a str,
-        to: Domain<'a>,
+        from: String,
+        to: Domain,
     },
-    MX(Domain<'a>),
+    MX(Domain),
     SRV {
-        service: &'a str,
-        protocol: &'a str,
-        from: &'a str,
-        to: &'a str,
+        service: String,
+        protocol: String,
+        from: String,
+        to: String,
         to_port: u16,
     },
-    TXT(&'a str),
+    TXT(String),
 }

@@ -1,25 +1,32 @@
+use extism_convert::{FromBytes, Msgpack, ToBytes};
+use petgraph::graph::DiGraph;
+use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
-use url::Url;
+use url_serde::SerdeUrl;
 
 use crate::types::{DNSRecord, Domain, EmailAddress, PhoneNumber};
 
-#[derive(Clone, Debug)]
-pub enum Node<'a> {
+pub type Graph = DiGraph<Node, String>;
+
+#[derive(Clone, Debug, PartialEq, Eq, FromBytes, ToBytes, Serialize, Deserialize)]
+#[encoding(Msgpack)]
+/// Node is a node in the Graph.
+pub enum Node {
     SocialMedia {
-        social_media_url: Url,
-        account_url: Url,
+        social_media_url: SerdeUrl,
+        account_url: SerdeUrl,
     },
     Website {
-        url: Url,
+        url: SerdeUrl,
     },
     IP(IpAddr),
-    PhoneNumber(PhoneNumber<'a>),
-    EmailAddress(EmailAddress<'a>),
-    Person(&'a str),
-    Organization(&'a str),
-    Domain(Domain<'a>),
+    PhoneNumber(PhoneNumber),
+    EmailAddress(EmailAddress),
+    Person(String),
+    Organization(String),
+    Domain(Domain),
     DNSEntry {
-        nameserver: Domain<'a>,
-        record: DNSRecord<'a>,
+        nameserver: Domain,
+        record: DNSRecord,
     },
 }
