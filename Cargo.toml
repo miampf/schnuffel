@@ -2,7 +2,19 @@
 name = "schnuffel"
 version = "0.1.0"
 edition = "2021"
+license = "AGPL-3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+pedantic = "deny"
+
 [dependencies]
+petgraph = {version = "0.6.5", features = ["rayon", "serde-1"]}
+url_serde = "0.2.0"
+extism = "1.0.0"
+extism-convert = "1.4.1"
+serde = "1.0.204"
