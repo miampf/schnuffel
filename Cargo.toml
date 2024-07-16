@@ -14,4 +14,5 @@ pedantic = "deny"
 
 [dependencies]
 schnuffel-types = {git = "https://github.com/miampf/schnuffel-types"}
+petgraph = {version = "0.6.5", features = ["rayon"]}
 extism = "1.0.0"

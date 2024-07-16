@@ -1404,13 +1404,14 @@ name = "schnuffel"
 version = "0.1.0"
 dependencies = [
  "extism",
+ "petgraph",
  "schnuffel-types",
 ]
 
 [[package]]
 name = "schnuffel-types"
 version = "0.1.0"
-source = "git+https://github.com/miampf/schnuffel-types#b00f900137ef28f908ea1dd403fca1980d54b95a"
+source = "git+https://github.com/miampf/schnuffel-types#799a226992b1b872a6db7fbf23bfea106bad8879"
 dependencies = [
  "extism-convert",
  "petgraph",
