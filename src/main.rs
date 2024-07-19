@@ -25,11 +25,13 @@ struct State {
 enum Message {
     MouseClick(Point),
     MouseDrag(Point),
+    MouseRelease,
 }
 
 #[derive(Debug, Clone)]
 struct VisualNode {
     pub node: Node,
+    pub id: usize,
     pub x: f32,
     pub y: f32,
     pub radius: f32,
@@ -39,7 +41,8 @@ struct VisualNode {
 impl Default for VisualNode {
     fn default() -> Self {
         Self {
-            node: Node::Person("John Doe".to_string()),
+            node: Node::Person("Foo Bar".to_string()),
+            id: 0,
             x: 0.0,
             y: 0.0,
             radius: 10.0,
@@ -50,8 +53,8 @@ impl Default for VisualNode {
 
 #[derive(Debug, Clone, Default)]
 struct VisualEdge {
-    from: VisualNode,
-    to: VisualNode,
+    from: usize,
+    to: usize,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -84,9 +87,8 @@ impl Application for App {
             Message::MouseClick(position) => {
                 for node in &mut self.state.graph.nodes {
                     if (position.x - node.x).powf(2.0) + (position.y - node.y).powf(2.0)
-                        > node.radius
+                        < node.radius.powf(2.0)
                     {
-                        println!("hit");
                         node.is_clicked = true;
                     }
                 }
@@ -98,6 +100,12 @@ impl Application for App {
                         node.x = position.x;
                         node.y = position.y;
                     }
+                }
+                self.state.update_values(self.state.graph.clone());
+            }
+            Message::MouseRelease => {
+                for node in &mut self.state.graph.nodes {
+                    node.is_clicked = false;
                 }
                 self.state.update_values(self.state.graph.clone());
             }
@@ -122,13 +130,23 @@ impl State {
         Self {
             graph_cache: Cache::default(),
             graph: VisualGraph {
-                nodes: vec![VisualNode {
-                    x: 50.0,
-                    y: 50.0,
-                    radius: 15.0,
-                    ..Default::default()
-                }],
-                edges: vec![],
+                nodes: vec![
+                    VisualNode {
+                        id: 0,
+                        x: 50.0,
+                        y: 50.0,
+                        radius: 15.0,
+                        ..Default::default()
+                    },
+                    VisualNode {
+                        id: 1,
+                        x: 100.0,
+                        y: 100.0,
+                        radius: 20.0,
+                        ..Default::default()
+                    },
+                ],
+                edges: vec![VisualEdge { from: 0, to: 1 }],
             },
         }
     }
@@ -150,16 +168,18 @@ impl Program<Message> for State {
         bounds: Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<<iced_renderer::Renderer as canvas::Renderer>::Geometry> {
+        // draw the graph
         let graph = self.graph_cache.draw(renderer, bounds.size(), |frame| {
             for node in &self.graph.nodes {
-                println!("x: {}; y: {}", node.x, node.y);
                 let to_draw = Path::circle(Point::new(node.x, node.y), node.radius);
                 frame.fill(&to_draw, Color::BLACK);
             }
             for edge in &self.graph.edges {
+                let from_node = self.graph.nodes.iter().find(|n| n.id == edge.from).unwrap();
+                let to_node = self.graph.nodes.iter().find(|n| n.id == edge.to).unwrap();
                 let to_draw = Path::line(
-                    Point::new(edge.from.x, edge.from.y),
-                    Point::new(edge.to.x, edge.to.y),
+                    Point::new(from_node.x, from_node.y),
+                    Point::new(to_node.x, to_node.y),
                 );
                 frame.stroke(
                     &to_draw,
@@ -186,6 +206,7 @@ impl Program<Message> for State {
             canvas::Event::Mouse(event) => match event {
                 mouse::Event::ButtonPressed(button) => match button {
                     mouse::Button::Left => match cursor.position() {
+                        // a node was clicked
                         Some(position) => (
                             canvas::event::Status::Captured,
                             Some(Message::MouseClick(position)),
@@ -195,9 +216,17 @@ impl Program<Message> for State {
                     _ => uncaptured,
                 },
                 mouse::Event::CursorMoved { position } => (
+                    // if a node is clicked this will move the node
                     canvas::event::Status::Captured,
                     Some(Message::MouseDrag(position)),
                 ),
+                mouse::Event::ButtonReleased(button) => match button {
+                    // this releases all nodes
+                    mouse::Button::Left => {
+                        (canvas::event::Status::Captured, Some(Message::MouseRelease))
+                    }
+                    _ => uncaptured,
+                },
                 _ => uncaptured,
             },
             _ => uncaptured,
@@ -206,5 +235,8 @@ impl Program<Message> for State {
 }
 
 fn main() -> iced::Result {
-    App::run(Settings::default())
+    App::run(Settings {
+        antialiasing: true,
+        ..Default::default()
+    })
 }
