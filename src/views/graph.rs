@@ -97,10 +97,13 @@ impl Program<Message> for GraphState {
     ) -> Vec<<iced_renderer::Renderer as canvas::Renderer>::Geometry> {
         // draw the graph
         let graph = self.graph_cache.draw(renderer, bounds.size(), |frame| {
+            // draw all nodes
             for node in &self.graph.nodes {
                 let to_draw = Path::circle(Point::new(node.x, node.y), node.radius);
                 frame.fill(&to_draw, Color::BLACK);
             }
+
+            // draw all edges
             for edge in &self.graph.edges {
                 let from_node = self.graph.nodes.iter().find(|n| n.id == edge.from).unwrap();
                 let to_node = self.graph.nodes.iter().find(|n| n.id == edge.to).unwrap();
@@ -108,6 +111,7 @@ impl Program<Message> for GraphState {
                     Point::new(from_node.x, from_node.y),
                     Point::new(to_node.x, to_node.y),
                 );
+
                 frame.stroke(
                     &to_draw,
                     Stroke {
@@ -128,7 +132,10 @@ impl Program<Message> for GraphState {
         _bounds: Rectangle,
         cursor: mouse::Cursor,
     ) -> (canvas::event::Status, Option<Message>) {
+        // is returned if we dont do anything with the event
         let uncaptured = (canvas::event::Status::Ignored, None);
+
+        // send update messages to the app
         match event {
             canvas::Event::Mouse(event) => match event {
                 mouse::Event::ButtonPressed(button) => match button {

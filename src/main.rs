@@ -7,10 +7,12 @@ use schnuffel::views::graph::GraphState;
 use schnuffel::views::ViewState;
 use schnuffel::Message;
 
+// all of our views
 enum View {
     Graph(GraphState),
 }
 
+// the actual app
 struct App {
     view: View,
 }
