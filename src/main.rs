@@ -84,11 +84,13 @@ impl Application for App {
             Message::MouseClick(position) => {
                 for node in &mut self.state.graph.nodes {
                     if (position.x - node.x).powf(2.0) + (position.y - node.y).powf(2.0)
-                        < node.radius
+                        > node.radius
                     {
+                        println!("hit");
                         node.is_clicked = true;
                     }
                 }
+                self.state.update_values(self.state.graph.clone());
             }
             Message::MouseDrag(position) => {
                 for node in &mut self.state.graph.nodes {
@@ -97,6 +99,7 @@ impl Application for App {
                         node.y = position.y;
                     }
                 }
+                self.state.update_values(self.state.graph.clone());
             }
         };
         Command::none()
@@ -118,8 +121,21 @@ impl State {
     pub fn new() -> Self {
         Self {
             graph_cache: Cache::default(),
-            graph: VisualGraph::default(),
+            graph: VisualGraph {
+                nodes: vec![VisualNode {
+                    x: 50.0,
+                    y: 50.0,
+                    radius: 15.0,
+                    ..Default::default()
+                }],
+                edges: vec![],
+            },
         }
+    }
+
+    pub fn update_values(&mut self, graph: VisualGraph) {
+        self.graph = graph;
+        self.graph_cache.clear();
     }
 }
 
@@ -136,6 +152,7 @@ impl Program<Message> for State {
     ) -> Vec<<iced_renderer::Renderer as canvas::Renderer>::Geometry> {
         let graph = self.graph_cache.draw(renderer, bounds.size(), |frame| {
             for node in &self.graph.nodes {
+                println!("x: {}; y: {}", node.x, node.y);
                 let to_draw = Path::circle(Point::new(node.x, node.y), node.radius);
                 frame.fill(&to_draw, Color::BLACK);
             }
