@@ -16,3 +16,6 @@ pedantic = "deny"
 schnuffel-types = {git = "https://github.com/miampf/schnuffel-types"}
 petgraph = {version = "0.6.5", features = ["rayon"]}
 extism = "1.0.0"
+iced = { version = "0.12.1", features = ["canvas", "advanced"] }
+iced_renderer = "0.12.1"
+iced_style = "0.12.1"
