@@ -119,12 +119,17 @@
           });
         };
 
-        packages = {
+        packages = rec {
           default = my-crate;
+          schnuffel = default;
         } // lib.optionalAttrs (!pkgs.stdenv.isDarwin) {
           my-crate-llvm-coverage = craneLibLLvmTools.cargoLlvmCov (commonArgs // {
             inherit cargoArtifacts;
           });
+        };
+
+        overlays.default = final: prev: {
+          inherit (self.packages.${prev.system}) schnuffel;
         };
 
         apps.default = flake-utils.lib.mkApp {
