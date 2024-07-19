@@ -34,19 +34,27 @@
         src = craneLib.cleanCargoSource ./.;
 
         # Common arguments can be set here to avoid repeating them later
-        commonArgs = {
+        commonArgs = rec {
           inherit src;
           strictDeps = true;
 
-          buildInputs = [
-            # Add additional build inputs here
+          buildInputs = with pkgs; [
+            libxkbcommon
+            libGL
+
+            wayland
+
+            xorg.libXcursor
+            xorg.libXrandr
+            xorg.libXi
+            xorg.libX11
           ] ++ lib.optionals pkgs.stdenv.isDarwin [
             # Additional darwin specific inputs can be set here
             pkgs.libiconv
           ];
 
           # Additional environment variables can be set directly
-          # MY_CUSTOM_VAR = "some value";
+          LD_LIBRARY_PATH = "${lib.makeLibraryPath buildInputs}";
         };
 
         craneLibLLvmTools = craneLib.overrideToolchain
@@ -123,17 +131,22 @@
           drv = my-crate;
         };
 
-        devShells.default = craneLib.devShell {
+        devShells.default = craneLib.devShell rec {
           # Inherit inputs from checks.
           checks = self.checks.${system};
 
-          # Additional dev-shell environment variables can be set directly
-          # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
+          buildInputs = with pkgs; [
+            libxkbcommon
+              libGL
 
-          # Extra inputs can be added here; cargo and rustc are provided by default.
-          packages = [
-            # pkgs.ripgrep
+              wayland
+
+              xorg.libXcursor
+              xorg.libXrandr
+              xorg.libXi
+              xorg.libX11
           ];
+          LD_LIBRARY_PATH = "${lib.makeLibraryPath buildInputs}";
         };
       });
 }
