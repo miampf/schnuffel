@@ -1,8 +1,80 @@
-use crate::views::graph::GraphState;
+use crate::views::graph::{constants, GraphState, GraphStateUpdate};
+use crate::views::ViewState;
 use crate::Message;
+use iced::mouse::ScrollDelta;
 use iced::widget::{column, text, Column};
 use iced::{Element, Theme};
 use schnuffel_types::graph::{DNSRecord, Node};
+
+pub fn update_graph(state: &mut GraphState, message: Message) {
+    match message {
+        Message::MouseClick(position) => {
+            for node in &mut state.graph.nodes {
+                // clear selections
+                node.is_selected = false;
+
+                if (position.x - node.x).powf(2.0) + (position.y - node.y).powf(2.0)
+                    < (node.radius * state.zoom_factor).powf(2.0)
+                {
+                    node.is_dragged = true;
+                    node.is_selected = true;
+                }
+            }
+        }
+        Message::MouseDrag(position) => {
+            for node in &mut state.graph.nodes {
+                if node.is_dragged {
+                    node.x = position.x;
+                    node.y = position.y;
+                }
+
+                if state.is_panning {
+                    let pan_delta = state.panning_start_point - position;
+                    node.x -= pan_delta.x * constants::PAN_MULTIPLIER;
+                    node.y -= pan_delta.y * constants::PAN_MULTIPLIER;
+                }
+            }
+            if state.is_panning {
+                state.panning_start_point = position;
+            }
+        }
+        Message::MouseRelease => {
+            state.is_panning = false;
+            for node in &mut state.graph.nodes {
+                node.is_dragged = false;
+            }
+        }
+        Message::MouseScroll(delta) => {
+            if let ScrollDelta::Lines { x: _, y } = delta {
+                state.zoom_factor += y * constants::ZOOM_MULTIPLIER;
+                state.zoom_factor = state
+                    .zoom_factor
+                    .clamp(constants::MIN_ZOOM, constants::MAX_ZOOM);
+
+                for node in &mut state.graph.nodes {
+                    // update the node positions to reflect the zoom
+                    if y < 0.0 && state.zoom_factor != constants::MIN_ZOOM {
+                        // zoom out
+                        node.x += state.zoom_factor * constants::NODE_ZOOM_POSITION_CHANGE;
+                        node.y += state.zoom_factor * constants::NODE_ZOOM_POSITION_CHANGE;
+                    } else if y > 0.0 && state.zoom_factor != constants::MAX_ZOOM {
+                        // zoom in
+                        node.x -= state.zoom_factor * constants::NODE_ZOOM_POSITION_CHANGE;
+                        node.y -= state.zoom_factor * constants::NODE_ZOOM_POSITION_CHANGE;
+                    }
+                }
+            }
+        }
+        Message::MiddleMouseClick(position) => {
+            state.is_panning = true;
+            state.panning_start_point = position;
+        }
+    };
+    state.update_state(GraphStateUpdate {
+        graph: state.graph.clone(),
+        zoom_factor: state.zoom_factor,
+    });
+}
 
 pub fn build_info_column(state: &GraphState) -> Column<Message, Theme, iced::Renderer> {
     match state.graph.nodes.iter().find(|n| n.is_selected) {
