@@ -4,7 +4,8 @@ use iced::theme::Theme;
 use iced::Settings;
 use iced::{Application, Command, Element};
 use schnuffel::views::graph::{
-    GraphState, GraphStateUpdate, MAX_ZOOM, MIN_ZOOM, PAN_MULTIPLIER, ZOOM_MULTIPLIER,
+    GraphState, GraphStateUpdate, MAX_ZOOM, MIN_ZOOM, NODE_ZOOM_POSITION_CHANGE, PAN_MULTIPLIER,
+    ZOOM_MULTIPLIER,
 };
 use schnuffel::views::ViewState;
 use schnuffel::Message;
@@ -106,12 +107,12 @@ fn update_graph(state: &mut GraphState, message: Message) {
                     // update the node positions to reflect the zoom
                     if y < 0.0 && state.zoom_factor != MIN_ZOOM {
                         // zoom out
-                        node.x += state.zoom_factor * 10.0;
-                        node.y += state.zoom_factor * 10.0;
+                        node.x += state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
+                        node.y += state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
                     } else if y > 0.0 && state.zoom_factor != MAX_ZOOM {
                         // zoom in
-                        node.x -= state.zoom_factor * 10.0;
-                        node.y -= state.zoom_factor * 10.0;
+                        node.x -= state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
+                        node.y -= state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
                     }
                 }
             }

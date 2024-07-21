@@ -15,10 +15,13 @@ use schnuffel_types::graph::{DNSRecord, Domain, Node};
 
 use super::ViewState;
 
-pub const MIN_ZOOM: f32 = 0.1;
+pub const MIN_ZOOM: f32 = 0.25;
 pub const MAX_ZOOM: f32 = 3.0;
-pub const ZOOM_MULTIPLIER: f32 = 0.1;
+pub const ZOOM_MULTIPLIER: f32 = 0.5;
 pub const PAN_MULTIPLIER: f32 = 0.75;
+pub const NODE_ZOOM_POSITION_CHANGE: f32 = 2.0;
+
+const NODE_ZOOM_SCALING: f32 = 0.5;
 
 pub fn view(state: &GraphState) -> Element<'_, Message, Theme, iced::Renderer> {
     iced::widget::responsive(move |size| {
@@ -262,8 +265,10 @@ impl Program<Message> for GraphState {
         let graph = self.graph_cache.draw(renderer, bounds.size(), |frame| {
             // draw all nodes
             for node in &self.graph.nodes {
-                let to_draw =
-                    Path::circle(Point::new(node.x, node.y), node.radius * self.zoom_factor);
+                let to_draw = Path::circle(
+                    Point::new(node.x, node.y),
+                    node.radius * self.zoom_factor * NODE_ZOOM_SCALING,
+                );
                 frame.fill(&to_draw, Color::BLACK);
             }
 
