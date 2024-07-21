@@ -1,6 +1,8 @@
 use iced::executor;
 use iced::theme::Theme;
 use iced::widget::canvas::Canvas;
+use iced::widget::scrollable::{Direction, Properties};
+use iced::widget::{column, container, row, text, vertical_rule};
 use iced::Settings;
 use iced::{Application, Command, Element, Length};
 use schnuffel::views::graph::GraphState;
@@ -48,10 +50,21 @@ impl Application for App {
 
     fn view(&self) -> Element<'_, Self::Message, Self::Theme, iced::Renderer> {
         match &self.view {
-            View::Graph(state) => Canvas::new(state)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into(),
+            View::Graph(state) => iced::widget::responsive(move |size| {
+                row!(
+                    Canvas::new(state)
+                        .width((size.width / 3.0) * 2.0) // 2/3 of the space belong to the canvas
+                        .height(size.height),
+                    iced::widget::scrollable(
+                        column!(text("Type: Person"), text("Name: Foo Bar"),).padding(10)
+                    )
+                    .width(size.width / 3.0)
+                    .height(size.height)
+                    .direction(Direction::Vertical(Properties::default()))
+                )
+                .into()
+            })
+            .into(),
         }
     }
 
