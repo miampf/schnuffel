@@ -1,4 +1,4 @@
-use iced::Point;
+use iced::{mouse::ScrollDelta, Point};
 
 pub mod plugin;
 pub mod views;
@@ -8,4 +8,5 @@ pub enum Message {
     MouseClick(Point),
     MouseDrag(Point),
     MouseRelease,
+    MouseScroll(ScrollDelta),
 }

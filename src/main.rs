@@ -1,8 +1,9 @@
 use iced::executor;
+use iced::mouse::ScrollDelta;
 use iced::theme::Theme;
 use iced::Settings;
 use iced::{Application, Command, Element};
-use schnuffel::views::graph::GraphState;
+use schnuffel::views::graph::{GraphState, GraphStateUpdate, MAX_ZOOM, MIN_ZOOM, ZOOM_MULTIPLIER};
 use schnuffel::views::ViewState;
 use schnuffel::Message;
 
@@ -64,13 +65,12 @@ fn update_graph(state: &mut GraphState, message: Message) {
                 node.is_selected = false;
 
                 if (position.x - node.x).powf(2.0) + (position.y - node.y).powf(2.0)
-                    < node.radius.powf(2.0)
+                    < (node.radius * state.zoom_factor).powf(2.0)
                 {
                     node.is_dragged = true;
                     node.is_selected = true;
                 }
             }
-            state.update_state(state.graph.clone());
         }
         Message::MouseDrag(position) => {
             for node in &mut state.graph.nodes {
@@ -79,15 +79,36 @@ fn update_graph(state: &mut GraphState, message: Message) {
                     node.y = position.y;
                 }
             }
-            state.update_state(state.graph.clone());
         }
         Message::MouseRelease => {
             for node in &mut state.graph.nodes {
                 node.is_dragged = false;
             }
-            state.update_state(state.graph.clone());
+        }
+        Message::MouseScroll(delta) => {
+            if let ScrollDelta::Lines { x: _, y } = delta {
+                state.zoom_factor += y * ZOOM_MULTIPLIER;
+                state.zoom_factor = state.zoom_factor.clamp(MIN_ZOOM, MAX_ZOOM);
+
+                for node in &mut state.graph.nodes {
+                    // update the node positions to reflect the zoom
+                    if y < 0.0 && state.zoom_factor != MIN_ZOOM {
+                        // zoom out
+                        node.x += state.zoom_factor * 10.0;
+                        node.y += state.zoom_factor * 10.0;
+                    } else if y > 0.0 && state.zoom_factor != MAX_ZOOM {
+                        // zoom in
+                        node.x -= state.zoom_factor * 10.0;
+                        node.y -= state.zoom_factor * 10.0;
+                    }
+                }
+            }
         }
     };
+    state.update_state(GraphStateUpdate {
+        graph: state.graph.clone(),
+        zoom_factor: state.zoom_factor,
+    });
 }
 
 fn main() -> iced::Result {
