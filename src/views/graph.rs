@@ -1,14 +1,37 @@
 use crate::Message;
-use iced::mouse;
-use iced::widget::canvas::{
-    self,
-    stroke::{self, Stroke},
-    Cache, Path, Program,
+use iced::widget::scrollable::{Direction, Properties};
+use iced::widget::{column, row, text};
+use iced::{mouse, Theme};
+use iced::{
+    widget::canvas::{
+        self,
+        stroke::{self, Stroke},
+        Cache, Canvas, Path, Program,
+    },
+    Element,
 };
 use iced::{Color, Point, Rectangle};
 use schnuffel_types::graph::Node;
 
 use super::ViewState;
+
+pub fn view(state: &GraphState) -> Element<'_, Message, Theme, iced::Renderer> {
+    iced::widget::responsive(move |size| {
+        row!(
+            Canvas::new(state)
+                .width((size.width / 3.0) * 2.0) // 2/3 of the space belong to the canvas
+                .height(size.height),
+            iced::widget::scrollable(
+                column!(text("Type: Person"), text("Name: Foo Bar"),).padding(10)
+            )
+            .width(size.width / 3.0)
+            .height(size.height)
+            .direction(Direction::Vertical(Properties::default()))
+        )
+        .into()
+    })
+    .into()
+}
 
 #[derive(Debug, Default)]
 pub struct GraphState {
