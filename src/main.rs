@@ -3,10 +3,7 @@ use iced::mouse::ScrollDelta;
 use iced::theme::Theme;
 use iced::Settings;
 use iced::{Application, Command, Element};
-use schnuffel::views::graph::{
-    GraphState, GraphStateUpdate, MAX_ZOOM, MIN_ZOOM, NODE_ZOOM_POSITION_CHANGE, PAN_MULTIPLIER,
-    ZOOM_MULTIPLIER,
-};
+use schnuffel::views::graph::{self, GraphState, GraphStateUpdate};
 use schnuffel::views::ViewState;
 use schnuffel::Message;
 
@@ -84,8 +81,8 @@ fn update_graph(state: &mut GraphState, message: Message) {
 
                 if state.is_panning {
                     let pan_delta = state.panning_start_point - position;
-                    node.x -= pan_delta.x * PAN_MULTIPLIER;
-                    node.y -= pan_delta.y * PAN_MULTIPLIER;
+                    node.x -= pan_delta.x * graph::constants::PAN_MULTIPLIER;
+                    node.y -= pan_delta.y * graph::constants::PAN_MULTIPLIER;
                 }
             }
             if state.is_panning {
@@ -100,19 +97,21 @@ fn update_graph(state: &mut GraphState, message: Message) {
         }
         Message::MouseScroll(delta) => {
             if let ScrollDelta::Lines { x: _, y } = delta {
-                state.zoom_factor += y * ZOOM_MULTIPLIER;
-                state.zoom_factor = state.zoom_factor.clamp(MIN_ZOOM, MAX_ZOOM);
+                state.zoom_factor += y * graph::constants::ZOOM_MULTIPLIER;
+                state.zoom_factor = state
+                    .zoom_factor
+                    .clamp(graph::constants::MIN_ZOOM, graph::constants::MAX_ZOOM);
 
                 for node in &mut state.graph.nodes {
                     // update the node positions to reflect the zoom
-                    if y < 0.0 && state.zoom_factor != MIN_ZOOM {
+                    if y < 0.0 && state.zoom_factor != graph::constants::MIN_ZOOM {
                         // zoom out
-                        node.x += state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
-                        node.y += state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
-                    } else if y > 0.0 && state.zoom_factor != MAX_ZOOM {
+                        node.x += state.zoom_factor * graph::constants::NODE_ZOOM_POSITION_CHANGE;
+                        node.y += state.zoom_factor * graph::constants::NODE_ZOOM_POSITION_CHANGE;
+                    } else if y > 0.0 && state.zoom_factor != graph::constants::MAX_ZOOM {
                         // zoom in
-                        node.x -= state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
-                        node.y -= state.zoom_factor * NODE_ZOOM_POSITION_CHANGE;
+                        node.x -= state.zoom_factor * graph::constants::NODE_ZOOM_POSITION_CHANGE;
+                        node.y -= state.zoom_factor * graph::constants::NODE_ZOOM_POSITION_CHANGE;
                     }
                 }
             }
