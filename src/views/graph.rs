@@ -1,14 +1,130 @@
 use crate::Message;
-use iced::mouse;
-use iced::widget::canvas::{
-    self,
-    stroke::{self, Stroke},
-    Cache, Path, Program,
+use iced::widget::scrollable::{Direction, Properties};
+use iced::widget::{column, row, text, Column};
+use iced::{mouse, Theme};
+use iced::{
+    widget::canvas::{
+        self,
+        stroke::{self, Stroke},
+        Cache, Canvas, Path, Program,
+    },
+    Element,
 };
 use iced::{Color, Point, Rectangle};
-use schnuffel_types::graph::Node;
+use schnuffel_types::graph::{DNSRecord, Domain, Node};
 
 use super::ViewState;
+
+pub fn view(state: &GraphState) -> Element<'_, Message, Theme, iced::Renderer> {
+    iced::widget::responsive(move |size| {
+        row!(
+            Canvas::new(state)
+                .width((size.width / 3.0) * 2.0) // 2/3 of the space belong to the canvas
+                .height(size.height),
+            iced::widget::scrollable(build_info_column(state))
+                .width(size.width / 3.0) // 1/3 of the space belongs to the node info
+                .height(size.height)
+                .direction(Direction::Vertical(Properties::default()))
+        )
+        .into()
+    })
+    .into()
+}
+
+fn build_info_column(state: &GraphState) -> Column<Message, Theme, iced::Renderer> {
+    match state.graph.nodes.iter().find(|n| n.is_selected) {
+        Some(node) => match &node.node {
+            Node::SocialMedia {
+                social_media_url,
+                account_url,
+            } => {
+                column!(
+                    text("Type: Social Media"),
+                    text(format!("Network URL: {}", social_media_url.as_str())),
+                    text(format!("Account URL: {}", account_url.as_str())),
+                )
+            }
+            Node::IP(ip) => {
+                column!(text("Type: IP Address"), text(format!("IP: {}", ip)))
+            }
+            Node::Person(name) => {
+                column!(text("Type: Person"), text(format!("Name: {name}")))
+            }
+            Node::Domain(domain) => {
+                column!(
+                    text("Type: Domain"),
+                    text(format!("domain: {}", domain.domain))
+                )
+            }
+            Node::Website { url } => {
+                column!(text("Type: Website"), text(format!("URL: {url}")))
+            }
+            Node::DNSEntry { nameserver, record } => {
+                let mut entry: Vec<Element<'_, Message, Theme, iced::Renderer>> = vec![
+                    text("Type: DNS Entry").into(),
+                    text(format!("NS: {}", nameserver.domain)).into(),
+                ];
+                let mut record: Vec<Element<'_, Message, Theme, iced::Renderer>> = match record {
+                    DNSRecord::A(addr) => {
+                        vec![
+                            text("Record Type: A").into(),
+                            text(format!("Address: {addr}")).into(),
+                        ]
+                    }
+                    DNSRecord::MX(domain) => vec![
+                        text("Record Type: MX").into(),
+                        text(format!("Domain: {}", domain.domain)).into(),
+                    ],
+                    DNSRecord::TXT(txt) => {
+                        vec![
+                            text("Record Type: TXT").into(),
+                            text(format!("Text: {txt}")).into(),
+                        ]
+                    }
+                    DNSRecord::AAAA(addr) => {
+                        vec![
+                            text("Record Type: AAAA").into(),
+                            text(format!("Address: {addr}")).into(),
+                        ]
+                    }
+                    DNSRecord::SRV {
+                        service,
+                        protocol,
+                        from,
+                        to,
+                        to_port,
+                    } => vec![
+                        text("Record Type: SRV").into(),
+                        text(format!("Service: {service}")).into(),
+                        text(format!("Protocol: {protocol}")).into(),
+                        text(format!("From: {from}")).into(),
+                        text(format!("To: {to}")).into(),
+                        text(format!("To port: {to_port}")).into(),
+                    ],
+                    DNSRecord::CNAME { from, to } => vec![
+                        text("Record Type: CNAME").into(),
+                        text(format!("From: {from}")).into(),
+                        text(format!("To: {}", to.domain)).into(),
+                    ],
+                };
+                entry.append(&mut record);
+                Column::from_vec(entry)
+            }
+            Node::PhoneNumber(number) => column!(
+                text("Type: Phone Number"),
+                text(format!("Number: {}", number.number))
+            ),
+            Node::EmailAddress(email) => column!(
+                text("Type: Email Address"),
+                text(format!("Address: {}", email.email))
+            ),
+            Node::Organization(org) => {
+                column!(text("Type: Organization"), text(format!("Name: {org}")))
+            }
+        },
+        None => column!().padding(10),
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct GraphState {
@@ -32,7 +148,8 @@ pub struct VisualNode {
     pub x: f32,
     pub y: f32,
     pub radius: f32,
-    pub is_clicked: bool,
+    pub is_dragged: bool,
+    pub is_selected: bool,
 }
 
 impl Default for VisualNode {
@@ -43,7 +160,8 @@ impl Default for VisualNode {
             x: 0.0,
             y: 0.0,
             radius: 10.0,
-            is_clicked: false,
+            is_dragged: false,
+            is_selected: false,
         }
     }
 }
@@ -78,8 +196,27 @@ impl Default for VisualGraph {
                     radius: 10.0,
                     ..Default::default()
                 },
+                VisualNode {
+                    id: 2,
+                    x: 100.0,
+                    y: 100.0,
+                    radius: 20.0,
+                    node: Node::DNSEntry {
+                        nameserver: Domain {
+                            domain: "ns1.example.com".to_string(),
+                        },
+                        record: DNSRecord::SRV {
+                            service: "SFTP Server".to_string(),
+                            protocol: "ftp".to_string(),
+                            from: "example.com".to_string(),
+                            to: "ftp.example.com".to_string(),
+                            to_port: 21,
+                        },
+                    },
+                    ..Default::default()
+                },
             ],
-            edges: vec![VisualEdge { from: 0, to: 1 }],
+            edges: vec![VisualEdge { from: 0, to: 1 }, VisualEdge { from: 1, to: 2 }],
         }
     }
 }

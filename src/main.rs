@@ -1,8 +1,7 @@
 use iced::executor;
 use iced::theme::Theme;
-use iced::widget::canvas::Canvas;
 use iced::Settings;
-use iced::{Application, Command, Element, Length};
+use iced::{Application, Command, Element};
 use schnuffel::views::graph::GraphState;
 use schnuffel::views::ViewState;
 use schnuffel::Message;
@@ -48,10 +47,7 @@ impl Application for App {
 
     fn view(&self) -> Element<'_, Self::Message, Self::Theme, iced::Renderer> {
         match &self.view {
-            View::Graph(state) => Canvas::new(state)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into(),
+            View::Graph(state) => schnuffel::views::graph::view(state),
         }
     }
 
@@ -64,17 +60,21 @@ fn update_graph(state: &mut GraphState, message: Message) {
     match message {
         Message::MouseClick(position) => {
             for node in &mut state.graph.nodes {
+                // clear selections
+                node.is_selected = false;
+
                 if (position.x - node.x).powf(2.0) + (position.y - node.y).powf(2.0)
                     < node.radius.powf(2.0)
                 {
-                    node.is_clicked = true;
+                    node.is_dragged = true;
+                    node.is_selected = true;
                 }
             }
             state.update_state(state.graph.clone());
         }
         Message::MouseDrag(position) => {
             for node in &mut state.graph.nodes {
-                if node.is_clicked {
+                if node.is_dragged {
                     node.x = position.x;
                     node.y = position.y;
                 }
@@ -83,7 +83,7 @@ fn update_graph(state: &mut GraphState, message: Message) {
         }
         Message::MouseRelease => {
             for node in &mut state.graph.nodes {
-                node.is_clicked = false;
+                node.is_dragged = false;
             }
             state.update_state(state.graph.clone());
         }
