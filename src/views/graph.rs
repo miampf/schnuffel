@@ -15,6 +15,14 @@ use schnuffel_types::graph::{DNSRecord, Domain, Node};
 
 use super::ViewState;
 
+pub const MIN_ZOOM: f32 = 0.25;
+pub const MAX_ZOOM: f32 = 3.0;
+pub const ZOOM_MULTIPLIER: f32 = 0.5;
+pub const PAN_MULTIPLIER: f32 = 0.75;
+pub const NODE_ZOOM_POSITION_CHANGE: f32 = 2.0;
+
+const NODE_ZOOM_SCALING: f32 = 0.5;
+
 pub fn view(state: &GraphState) -> Element<'_, Message, Theme, iced::Renderer> {
     iced::widget::responsive(move |size| {
         row!(
@@ -126,17 +134,38 @@ fn build_info_column(state: &GraphState) -> Column<Message, Theme, iced::Rendere
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct GraphState {
     pub graph_cache: Cache,
     pub graph: VisualGraph,
+    pub zoom_factor: f32,
+    pub is_panning: bool,
+    pub panning_start_point: Point,
+}
+
+impl Default for GraphState {
+    fn default() -> Self {
+        Self {
+            graph_cache: Cache::default(),
+            graph: VisualGraph::default(),
+            zoom_factor: 1.0,
+            is_panning: false,
+            panning_start_point: Point::default(),
+        }
+    }
+}
+
+pub struct GraphStateUpdate {
+    pub graph: VisualGraph,
+    pub zoom_factor: f32,
 }
 
 impl ViewState for GraphState {
-    type UpdateType = VisualGraph;
+    type UpdateType = GraphStateUpdate;
 
-    fn update_state(&mut self, new: VisualGraph) {
-        self.graph = new;
+    fn update_state(&mut self, new: GraphStateUpdate) {
+        self.graph = new.graph;
+        self.zoom_factor = new.zoom_factor;
         self.graph_cache.clear();
     }
 }
@@ -236,7 +265,10 @@ impl Program<Message> for GraphState {
         let graph = self.graph_cache.draw(renderer, bounds.size(), |frame| {
             // draw all nodes
             for node in &self.graph.nodes {
-                let to_draw = Path::circle(Point::new(node.x, node.y), node.radius);
+                let to_draw = Path::circle(
+                    Point::new(node.x, node.y),
+                    node.radius * self.zoom_factor * NODE_ZOOM_SCALING,
+                );
                 frame.fill(&to_draw, Color::BLACK);
             }
 
@@ -253,7 +285,7 @@ impl Program<Message> for GraphState {
                     &to_draw,
                     Stroke {
                         style: stroke::Style::Solid(Color::BLACK),
-                        width: 1.0,
+                        width: 1.0 * self.zoom_factor,
                         ..Stroke::default()
                     },
                 );
@@ -284,6 +316,13 @@ impl Program<Message> for GraphState {
                         ),
                         None => uncaptured,
                     },
+                    mouse::Button::Middle => match cursor.position() {
+                        Some(position) => (
+                            canvas::event::Status::Captured,
+                            Some(Message::MiddleMouseClick(position)),
+                        ),
+                        None => uncaptured,
+                    },
                     _ => uncaptured,
                 },
                 mouse::Event::CursorMoved { position } => (
@@ -296,8 +335,15 @@ impl Program<Message> for GraphState {
                     mouse::Button::Left => {
                         (canvas::event::Status::Captured, Some(Message::MouseRelease))
                     }
+                    mouse::Button::Middle => {
+                        (canvas::event::Status::Captured, Some(Message::MouseRelease))
+                    }
                     _ => uncaptured,
                 },
+                mouse::Event::WheelScrolled { delta } => (
+                    canvas::event::Status::Captured,
+                    Some(Message::MouseScroll(delta)),
+                ),
                 _ => uncaptured,
             },
             _ => uncaptured,
