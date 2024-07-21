@@ -3,7 +3,9 @@ use iced::mouse::ScrollDelta;
 use iced::theme::Theme;
 use iced::Settings;
 use iced::{Application, Command, Element};
-use schnuffel::views::graph::{GraphState, GraphStateUpdate, MAX_ZOOM, MIN_ZOOM, ZOOM_MULTIPLIER};
+use schnuffel::views::graph::{
+    GraphState, GraphStateUpdate, MAX_ZOOM, MIN_ZOOM, PAN_MULTIPLIER, ZOOM_MULTIPLIER,
+};
 use schnuffel::views::ViewState;
 use schnuffel::Message;
 
@@ -78,9 +80,19 @@ fn update_graph(state: &mut GraphState, message: Message) {
                     node.x = position.x;
                     node.y = position.y;
                 }
+
+                if state.is_panning {
+                    let pan_delta = state.panning_start_point - position;
+                    node.x -= pan_delta.x * PAN_MULTIPLIER;
+                    node.y -= pan_delta.y * PAN_MULTIPLIER;
+                }
+            }
+            if state.is_panning {
+                state.panning_start_point = position;
             }
         }
         Message::MouseRelease => {
+            state.is_panning = false;
             for node in &mut state.graph.nodes {
                 node.is_dragged = false;
             }
@@ -103,6 +115,10 @@ fn update_graph(state: &mut GraphState, message: Message) {
                     }
                 }
             }
+        }
+        Message::MiddleMouseClick(position) => {
+            state.is_panning = true;
+            state.panning_start_point = position;
         }
     };
     state.update_state(GraphStateUpdate {

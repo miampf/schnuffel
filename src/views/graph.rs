@@ -18,6 +18,7 @@ use super::ViewState;
 pub const MIN_ZOOM: f32 = 0.1;
 pub const MAX_ZOOM: f32 = 3.0;
 pub const ZOOM_MULTIPLIER: f32 = 0.1;
+pub const PAN_MULTIPLIER: f32 = 0.75;
 
 pub fn view(state: &GraphState) -> Element<'_, Message, Theme, iced::Renderer> {
     iced::widget::responsive(move |size| {
@@ -135,6 +136,8 @@ pub struct GraphState {
     pub graph_cache: Cache,
     pub graph: VisualGraph,
     pub zoom_factor: f32,
+    pub is_panning: bool,
+    pub panning_start_point: Point,
 }
 
 impl Default for GraphState {
@@ -143,6 +146,8 @@ impl Default for GraphState {
             graph_cache: Cache::default(),
             graph: VisualGraph::default(),
             zoom_factor: 1.0,
+            is_panning: false,
+            panning_start_point: Point::default(),
         }
     }
 }
@@ -306,6 +311,13 @@ impl Program<Message> for GraphState {
                         ),
                         None => uncaptured,
                     },
+                    mouse::Button::Middle => match cursor.position() {
+                        Some(position) => (
+                            canvas::event::Status::Captured,
+                            Some(Message::MiddleMouseClick(position)),
+                        ),
+                        None => uncaptured,
+                    },
                     _ => uncaptured,
                 },
                 mouse::Event::CursorMoved { position } => (
@@ -316,6 +328,9 @@ impl Program<Message> for GraphState {
                 mouse::Event::ButtonReleased(button) => match button {
                     // this releases all nodes
                     mouse::Button::Left => {
+                        (canvas::event::Status::Captured, Some(Message::MouseRelease))
+                    }
+                    mouse::Button::Middle => {
                         (canvas::event::Status::Captured, Some(Message::MouseRelease))
                     }
                     _ => uncaptured,

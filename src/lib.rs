@@ -9,4 +9,5 @@ pub enum Message {
     MouseDrag(Point),
     MouseRelease,
     MouseScroll(ScrollDelta),
+    MiddleMouseClick(Point),
 }
